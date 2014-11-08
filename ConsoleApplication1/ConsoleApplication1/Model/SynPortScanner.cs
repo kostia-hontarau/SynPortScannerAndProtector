@@ -12,11 +12,16 @@ namespace ConsoleApplication1.Model
 {
     internal sealed class SynPortScanner
     {
-        #region Data Members
+        #region Constants and ReadOnly Members
+        private const ushort WindowSize = 8192;
+        private const int PacketsInOneTime = 20;
+        private const int PacketsBufferSize = 102400;
+
         private readonly SortedSet<PortInfo> scanResults;
         private readonly ushort sourcePort;
-        private const ushort windowSize = 8192;
+        #endregion
 
+        #region Data Members
         private readonly Thread sendingThread;
         private readonly Thread captureThread;
         #endregion
@@ -42,7 +47,7 @@ namespace ConsoleApplication1.Model
         #region Members
         public void Scan(ScanningOptions options)
         {
-            if (options.TargetIP == IpV4Address.Zero) 
+            if (options.TargetIP == IpV4Address.Zero)
                 throw new ArgumentException("Ошибка в настройках сканирования!", "options");
 
             this.scanResults.Clear();
@@ -66,24 +71,44 @@ namespace ConsoleApplication1.Model
             ScanningOptions options = argument as ScanningOptions;
             if (options == null) return;
 
-            using (PacketCommunicator communicator = options.Device.Open(65535, PacketDeviceOpenAttributes.Promiscuous, 1000))
+            using (PacketCommunicator communicator = options.Device.Open(65535, PacketDeviceOpenAttributes.Promiscuous | PacketDeviceOpenAttributes.NoCaptureLocal, 1000))
             {
-                using (PacketSendBuffer buffer = new PacketSendBuffer(65535))
+                int portsAmount = options.EndPort - options.StartPort+1;
+                int buffersAmount = portsAmount / PacketsInOneTime;
+                for (int i = 0; i <= buffersAmount; i++)
                 {
-                    for (ushort port = (ushort)options.StartPort; port <= options.EndPort; port++)
+                    ushort from = (ushort)(options.StartPort + i * PacketsInOneTime);
+                    ushort to = 0;
+                    if (i != buffersAmount) to = (ushort)(from + PacketsInOneTime);
+                    else
                     {
-                        buffer.Enqueue(this.CreateTcpSynPacket(options, port));
+                        int residue = portsAmount % PacketsInOneTime;
+                        if (residue == 0) to = (ushort)(from + PacketsInOneTime);
+                        else to = (ushort)(from + residue-1);
                     }
-                    communicator.Transmit(buffer, true);
+
+                    SendPacketsToPorts(from, to, options, communicator);
                 }
             }
         }
+        private void SendPacketsToPorts(ushort from, ushort to, ScanningOptions options, PacketCommunicator communicator)
+        {
+            using (PacketSendBuffer buffer = new PacketSendBuffer(PacketsBufferSize))
+            {
+                for (ushort port = from; port <= to; port++)
+                {
+                    buffer.Enqueue(this.CreateTcpSynPacket(options, port));
+                }
+                communicator.Transmit(buffer, true);
+            }
+        }
+
         private void ReceivePackets(object argument)
         {
             ScanningOptions options = argument as ScanningOptions;
             if (options == null) return;
 
-            using (PacketCommunicator communicator = options.Device.Open(65535, PacketDeviceOpenAttributes.None, 100))
+            using (PacketCommunicator communicator = options.Device.Open(65535, PacketDeviceOpenAttributes.Promiscuous | PacketDeviceOpenAttributes.NoCaptureLocal, 100))
             {
                 communicator.SetFilter("tcp and src " + options.TargetIP + " and dst " + options.SourceIP);
 
@@ -130,7 +155,7 @@ namespace ConsoleApplication1.Model
                 SourcePort = sourcePort,
                 DestinationPort = targetPort,
                 ControlBits = TcpControlBits.Synchronize,
-                Window = windowSize,
+                Window = WindowSize,
             };
             return PacketBuilder.Build(DateTime.Now, ethernetLayer, ipV4Layer, tcpLayer);
         }
@@ -155,7 +180,7 @@ namespace ConsoleApplication1.Model
                 DestinationPort = targetPort,
                 SequenceNumber = (uint)new Random().Next(),
                 ControlBits = TcpControlBits.Reset,
-                Window = windowSize,
+                Window = WindowSize,
             };
             return PacketBuilder.Build(DateTime.Now, ethernetLayer, ipV4Layer, tcpLayer);
         }

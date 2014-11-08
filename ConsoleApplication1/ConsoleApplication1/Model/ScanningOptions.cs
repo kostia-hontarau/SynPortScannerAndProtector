@@ -39,7 +39,7 @@ namespace ConsoleApplication1.Model
             get { return this.startPort; }
             set
             {
-                if (0 < value && value < 65535) this.startPort = (ushort) value;
+                if (0 < value && value <= 65535) this.startPort = (ushort) value;
                 else throw new ArgumentException("The port number should be between 0 and 65535!", "value");
             }
         }
@@ -48,7 +48,7 @@ namespace ConsoleApplication1.Model
             get { return this.endPort; }
             set
             {
-                if (0 < value && value < 65535) this.endPort = (ushort) value;
+                if (0 < value && value <= 65535) this.endPort = (ushort) value;
                 else throw new ArgumentException("The port number should be between 0 and 65535!", "value");
             }
         }

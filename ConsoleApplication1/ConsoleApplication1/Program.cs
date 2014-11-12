@@ -109,7 +109,7 @@ namespace ConsoleApplication1
             {
                 string input = Console.ReadLine();
                 bool success = IPAddress.TryParse(input, out address);
-                if (!success) Console.WriteLine("Вы ввели не IP!");
+                if (!success) Console.WriteLine("You must enter an IP address!");
                 else break;
             }
             return new IpV4Address(address.ToString());

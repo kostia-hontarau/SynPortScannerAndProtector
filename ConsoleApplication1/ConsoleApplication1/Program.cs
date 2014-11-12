@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
-using ConsoleApplication1.Model;
+
 using PcapDotNet.Core;
 using PcapDotNet.Packets.IpV4;
+
+using ConsoleApplication1.Model;
 
 
 namespace ConsoleApplication1
@@ -18,25 +22,41 @@ namespace ConsoleApplication1
             bool exit = false;
             while (!exit)
             {
-                Console.WriteLine("1 - Настройка сканирования;");
-                Console.WriteLine("2 - Сканировать согласно настройкам;");
-                Console.WriteLine("3 - Выход.");
+                Console.WriteLine("1 - Setup scanning options;");
+                Console.WriteLine(scanner.CanScan ? 
+                    "2 - Start scanning;" : 
+                    "2 - Scan results (Open ports);");
+                Console.WriteLine("3 - Exit.");
                 int command = GetIntFromConsole();
-
+                
                 switch (command)
                 {
                     case 1:
-                        Console.Write("IP адрес:");
+                        Console.Write("IP address:");
                         options.TargetIP = GetIPFromConsole();
-                        Console.Write("Порты с:");
+                        Console.Write("From port:");
                         options.StartPort = GetIntFromConsole(x => x > 0);
-                        Console.Write("Порты по:");
+                        Console.Write("To port:");
                         options.EndPort = GetIntFromConsole(x => x > 0);
+                        Console.WriteLine("Press Enter to continue...");
                         break;
                     case 2:
                         try
                         {
-                            scanner.Scan(options);
+                            if (scanner.CanScan)
+                            {
+                                Console.WriteLine("Scanning...");
+                                scanner.Scan(options);
+                            }
+                            else
+                            {
+                                List<PortInfo> openPorts = scanner.ScanResults.Where(result => result.IsOpen).ToList();
+                                Console.WriteLine(openPorts.Count > 0 ? "Open ports:" : "There are no open ports in results!");
+                                foreach (PortInfo info in openPorts)
+                                {
+                                    Console.WriteLine(info.ToString());
+                                }
+                            }
                         }
                         catch (ArgumentException exc)
                         {
@@ -44,17 +64,17 @@ namespace ConsoleApplication1
                         }
                         break;
                     case 3:
-                        Console.WriteLine("Пока!");
                         exit = true;
+                        Console.WriteLine("Bye-bye!");
                         break;
                     default:
-                        Console.WriteLine("Вы ошиблись цифрой!");
+                        Console.WriteLine("Wrong comand!");
                         break;
                 }
-                Console.WriteLine("Нажмите Enter для продолжения...");
                 Console.ReadLine();
                 Console.Clear();
             }
+            Console.WriteLine("Press Enter to close the application...");
         }
 
         private static int GetIntFromConsole()
@@ -64,7 +84,7 @@ namespace ConsoleApplication1
             {
                 string answer = Console.ReadLine();
                 bool success = int.TryParse(answer, out number);
-                if (!success) Console.WriteLine("Вы ввели не число!");
+                if (!success) Console.WriteLine("You must enter a number!");
                 else break;
             }
             return number;
@@ -76,8 +96,8 @@ namespace ConsoleApplication1
             {
                 string answer = Console.ReadLine();
                 bool success = int.TryParse(answer, out number);
-                if (!success) Console.WriteLine("Вы ввели не число!");
-                else if (!predicate(number)) Console.WriteLine("Число не подходит в данном контексте!");
+                if (!success) Console.WriteLine("You must enter a number!");
+                else if (!predicate(number)) Console.WriteLine("The number is not applicable for this context!");
                 else break;
             }
             return number;

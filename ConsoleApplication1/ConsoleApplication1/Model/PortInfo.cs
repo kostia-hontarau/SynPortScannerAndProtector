@@ -37,5 +37,12 @@ namespace ConsoleApplication1.Model
             return -1;
         } 
         #endregion
+
+        #region Overriden Members
+        public override string ToString()
+        {
+            return String.Format("Port {0} is {1};", this.Number, this.IsOpen ? "open" : "closed");
+        }
+        #endregion
     }
 }

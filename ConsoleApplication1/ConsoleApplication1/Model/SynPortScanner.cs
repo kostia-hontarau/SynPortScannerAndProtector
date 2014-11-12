@@ -2,11 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+
 using PcapDotNet.Core;
 using PcapDotNet.Packets;
 using PcapDotNet.Packets.Ethernet;
 using PcapDotNet.Packets.IpV4;
 using PcapDotNet.Packets.Transport;
+
+using ConsoleApplication1.Extensions;
+
 
 namespace ConsoleApplication1.Model
 {
@@ -31,6 +35,7 @@ namespace ConsoleApplication1.Model
         {
             get { return this.scanResults.ToArray(); }
         }
+        public bool CanScan { get; private set; }
         #endregion
 
         #region Constructors
@@ -39,17 +44,21 @@ namespace ConsoleApplication1.Model
             this.scanResults = new SortedSet<PortInfo>();
             this.sourcePort = (ushort)(4123 + new Random().Next() % 1000);
 
-            this.sendingThread = new Thread(this.SendPackets);
-            this.captureThread = new Thread(this.ReceivePackets);
+            this.sendingThread = new Thread(this.SendPackets) {IsBackground = true};
+            this.captureThread = new Thread(this.ReceivePackets) {IsBackground = true};
+            this.CanScan = true;
         }
         #endregion
 
         #region Members
         public void Scan(ScanningOptions options)
         {
-            if (options.TargetIP == IpV4Address.Zero)
+            bool isLocalHost = this.IsTargetLocalHost(options);
+            bool isZero = options.TargetIP == IpV4Address.Zero;
+            if (isLocalHost || isZero)
                 throw new ArgumentException("Ошибка в настройках сканирования!", "options");
 
+            this.CanScan = false;
             this.scanResults.Clear();
             ARPMacResolver resolver = new ARPMacResolver();
             resolver.ResolveDestinationMacFor(options);
@@ -60,6 +69,7 @@ namespace ConsoleApplication1.Model
                 options.StartPort = options.EndPort;
                 options.EndPort = buffer;
             }
+
             this.captureThread.Start(options);
             this.sendingThread.Start(options);
         }
@@ -129,8 +139,10 @@ namespace ConsoleApplication1.Model
                         communicator.SendPacket(rstPacket);
 
                         PortInfo info = new PortInfo(datagram.SourcePort, isSynAck);
-                        scanResults.Add(info);
-                        Console.WriteLine("Порт: {0}; Состояние: {1};", info.Number, info.IsOpen ? "Открыт" : "Закрыт");
+                        bool isNew = scanResults.Add(info);
+                        if (isNew) 
+                            Console.WriteLine(info.ToString());
+
                         if (scanResults.Count == options.EndPort - options.StartPort) break;
                     }
                 }
@@ -183,6 +195,20 @@ namespace ConsoleApplication1.Model
                 Window = WindowSize,
             };
             return PacketBuilder.Build(DateTime.Now, ethernetLayer, ipV4Layer, tcpLayer);
+        }
+
+        private bool IsTargetLocalHost(ScanningOptions options)
+        {
+            foreach (LivePacketDevice device in LivePacketDevice.AllLocalMachine)
+            {
+                List<IpV4Address> addresses = device.Addresses
+                    .Where(addr => addr.Address.Family == SocketAddressFamily.Internet)
+                    .Select(addr => new IpV4Address(addr.GetIP()))
+                    .ToList();
+                if (addresses.Contains(options.TargetIP)) return true;
+            }
+
+            return options.TargetIP == new IpV4Address("127.0.0.1");
         }
         #endregion
     }

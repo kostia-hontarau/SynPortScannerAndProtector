@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using ConsoleApplication1.Extensions;
+
 using PcapDotNet.Base;
 using PcapDotNet.Core;
 using PcapDotNet.Packets;
 using PcapDotNet.Packets.Arp;
 using PcapDotNet.Packets.Ethernet;
-using PcapDotNet.Packets.IpV4;
+
+using ConsoleApplication1.Extensions;
+
 
 namespace ConsoleApplication1.Model
 {
@@ -16,13 +18,6 @@ namespace ConsoleApplication1.Model
         #region Members
         public void ResolveDestinationMacFor(ScanningOptions options)
         {
-            bool isLocalHost = this.IsTargetLocalHost(options);
-            if (isLocalHost)
-            {
-                options.TargetMac = options.SourceMac;
-                return;
-            }
-
             using (PacketCommunicator communicator = options.Device.Open(65535, PacketDeviceOpenAttributes.None, 100))
             {
                 Packet request = this.BuildArpRequest(options);
@@ -48,18 +43,6 @@ namespace ConsoleApplication1.Model
         #endregion
 
         #region Assistants
-        private bool IsTargetLocalHost(ScanningOptions options)
-        {
-            foreach (LivePacketDevice device in LivePacketDevice.AllLocalMachine)
-            {
-                List<IpV4Address> addresses = device.Addresses
-                    .Where(addr => addr.Address.Family == SocketAddressFamily.Internet)
-                    .Select(addr => new IpV4Address(addr.GetIP()))
-                    .ToList();
-                if (addresses.Contains(options.TargetIP)) return true;
-            }
-            return false;
-        }
         private Packet BuildArpRequest(ScanningOptions options)
         {
             EthernetLayer ethernetLayer =

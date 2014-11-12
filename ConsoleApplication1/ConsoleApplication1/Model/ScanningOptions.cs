@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Linq;
-using ConsoleApplication1.Extensions;
+
 using PcapDotNet.Core;
 using PcapDotNet.Core.Extensions;
 using PcapDotNet.Packets.Ethernet;
 using PcapDotNet.Packets.IpV4;
+
+using ConsoleApplication1.Extensions;
+
 
 namespace ConsoleApplication1.Model
 {

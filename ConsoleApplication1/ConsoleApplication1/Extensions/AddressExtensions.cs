@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using PcapDotNet.Base;
 using PcapDotNet.Core;
 using PcapDotNet.Packets.Ethernet;
 using PcapDotNet.Packets.IpV4;
+
 
 namespace ConsoleApplication1.Extensions
 {
@@ -27,7 +29,7 @@ namespace ConsoleApplication1.Extensions
             if (address.Address.Family == SocketAddressFamily.Internet)
             {
                 string asString = address.Address.ToString();
-                int spacePos = asString.IndexOf(" ", System.StringComparison.Ordinal);
+                int spacePos = asString.IndexOf(" ", StringComparison.Ordinal);
                 asString = asString.Substring(spacePos, asString.Length - spacePos);
                 return asString;
             }

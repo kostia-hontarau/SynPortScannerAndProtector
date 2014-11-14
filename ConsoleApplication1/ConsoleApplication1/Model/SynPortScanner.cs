@@ -58,6 +58,9 @@ namespace ConsoleApplication1.Model
             if (isLocalHost || isZero)
                 throw new ArgumentException("Ошибка в настройках сканирования!", "options");
 
+            if (!this.CanScan)
+                throw new InvalidOperationException("The scanner can't be used twice");
+
             this.CanScan = false;
             this.scanResults.Clear();
             ARPMacResolver resolver = new ARPMacResolver();

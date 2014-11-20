@@ -46,7 +46,7 @@ namespace ConsoleApplication1.Extensions
                 asString = asString.Substring(spacePos, asString.Length - spacePos);
                 return new IpV4Address(asString);
             }
-            return IpV4Address.Zero; ;
+            return IpV4Address.Zero;
         }
     }
 }

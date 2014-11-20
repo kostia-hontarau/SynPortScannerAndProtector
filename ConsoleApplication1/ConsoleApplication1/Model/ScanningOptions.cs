@@ -14,9 +14,9 @@ namespace ConsoleApplication1.Model
     internal sealed class ScanningOptions
     {
         #region Data Members
-        private readonly LivePacketDevice device;
-        private readonly MacAddress sourceMac;
-        private readonly IpV4Address sourceIP;
+        private LivePacketDevice device;
+        private MacAddress sourceMac;
+        private IpV4Address sourceIP;
 
         private ushort startPort;
         private ushort endPort;
@@ -26,6 +26,14 @@ namespace ConsoleApplication1.Model
         public LivePacketDevice Device
         {
             get { return this.device; }
+            set
+            {
+                if (value == null) return;
+                this.device = value;
+                DeviceAddress buffer = device.Addresses.FirstOrDefault(addr => addr.Address.Family == SocketAddressFamily.Internet);
+                this.sourceMac = device.GetMacAddress();
+                this.sourceIP = new IpV4Address(buffer.GetIP());
+            }
         }
         public IpV4Address SourceIP
         {
@@ -58,23 +66,17 @@ namespace ConsoleApplication1.Model
         #endregion
 
         #region Constructors
-        private ScanningOptions()
+        public ScanningOptions()
         {
             this.TargetIP = IpV4Address.Zero;
             this.TargetMac = MacAddress.Zero;
             this.StartPort = 1;
             this.EndPort = 1;
         }
-        public ScanningOptions(LivePacketDevice device) : this()
-        {
-            this.device = device;
-            DeviceAddress buffer = device.Addresses.FirstOrDefault(addr => addr.Address.Family == SocketAddressFamily.Internet);
-            this.sourceMac = device.GetMacAddress();
-            this.sourceIP = new IpV4Address(buffer.GetIP());
-        }
         public ScanningOptions(LivePacketDevice device, IpV4Address targetIp, int startPort, int endPort)
-            : this(device)
+            : this()
         {
+            this.Device = device;
             this.TargetMac = MacAddress.Zero;
             this.TargetIP = targetIp;
             this.StartPort = startPort;

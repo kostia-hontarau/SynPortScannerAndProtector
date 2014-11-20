@@ -16,7 +16,7 @@ namespace ConsoleApplication1
         private static ScanningOptions options;
         private static void Main(string[] args)
         {
-            options = new ScanningOptions(LivePacketDevice.AllLocalMachine[2]);
+            options = new ScanningOptions();
             SynPortScanner scanner = new SynPortScanner();
 
             bool exit = false;
@@ -32,6 +32,9 @@ namespace ConsoleApplication1
                 switch (command)
                 {
                     case 1:
+                        PrintDevices();
+                        int deviceNum = GetIntFromConsole(num => (num >= 1) && (num <= LivePacketDevice.AllLocalMachine.Count));
+                        options.Device = LivePacketDevice.AllLocalMachine[deviceNum - 1];
                         Console.Write("IP address:");
                         options.TargetIP = GetIPFromConsole();
                         Console.Write("From port:");
@@ -104,15 +107,28 @@ namespace ConsoleApplication1
         }
         private static IpV4Address GetIPFromConsole()
         {
-            IPAddress address;
+            IPAddress address = IPAddress.None;
             while (true)
             {
                 string input = Console.ReadLine();
-                bool success = IPAddress.TryParse(input, out address);
+                bool success = (input != null) && IPAddress.TryParse(input, out address);
                 if (!success) Console.WriteLine("You must enter an IP address!");
                 else break;
             }
             return new IpV4Address(address.ToString());
+        }
+
+        private static void PrintDevices()
+        {
+            int i = 1;
+            foreach (LivePacketDevice device in LivePacketDevice.AllLocalMachine)
+            {
+                string addresses = device.Addresses
+                    .Select(address => address.Address.ToString())
+                    .Aggregate("", (s, s1) => s += s1 + ", ");
+                if (String.IsNullOrWhiteSpace(addresses)) addresses = "No addresses on interface";
+                Console.WriteLine("((({0}))) - {1}", i++, addresses);
+            }
         }
     }
 }

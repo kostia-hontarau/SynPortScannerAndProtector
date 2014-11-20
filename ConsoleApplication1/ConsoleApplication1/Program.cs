@@ -16,7 +16,7 @@ namespace ConsoleApplication1
         private static ScanningOptions options;
         private static void Main(string[] args)
         {
-            options = new ScanningOptions(LivePacketDevice.AllLocalMachine[1]);
+            options = new ScanningOptions(LivePacketDevice.AllLocalMachine[2]);
             SynPortScanner scanner = new SynPortScanner();
 
             bool exit = false;

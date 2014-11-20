@@ -44,8 +44,8 @@ namespace ConsoleApplication1.Model
             this.scanResults = new SortedSet<PortInfo>();
             this.sourcePort = (ushort)(4123 + new Random().Next() % 1000);
 
-            this.sendingThread = new Thread(this.SendPackets) {IsBackground = true};
-            this.captureThread = new Thread(this.ReceivePackets) {IsBackground = true};
+            this.sendingThread = new Thread(this.SendPackets) { IsBackground = true };
+            this.captureThread = new Thread(this.ReceivePackets) { IsBackground = true };
             this.CanScan = true;
         }
         #endregion
@@ -54,8 +54,9 @@ namespace ConsoleApplication1.Model
         public void Scan(ScanningOptions options)
         {
             bool isLocalHost = this.IsTargetLocalHost(options);
+            bool isInSubnetwork = this.IsInSubnetwork(options);
             bool isZero = options.TargetIP == IpV4Address.Zero;
-            if (isLocalHost || isZero)
+            if (isLocalHost || isZero || !isInSubnetwork)
                 throw new ArgumentException("Ошибка в настройках сканирования!", "options");
 
             if (!this.CanScan)
@@ -86,7 +87,7 @@ namespace ConsoleApplication1.Model
 
             using (PacketCommunicator communicator = options.Device.Open(65535, PacketDeviceOpenAttributes.Promiscuous | PacketDeviceOpenAttributes.NoCaptureLocal, 1000))
             {
-                int portsAmount = options.EndPort - options.StartPort+1;
+                int portsAmount = options.EndPort - options.StartPort + 1;
                 int buffersAmount = portsAmount / PacketsInOneTime;
                 for (int i = 0; i <= buffersAmount; i++)
                 {
@@ -97,7 +98,7 @@ namespace ConsoleApplication1.Model
                     {
                         int residue = portsAmount % PacketsInOneTime;
                         if (residue == 0) to = (ushort)(from + PacketsInOneTime);
-                        else to = (ushort)(from + residue-1);
+                        else to = (ushort)(from + residue - 1);
                     }
 
                     SendPacketsToPorts(from, to, options, communicator);
@@ -143,7 +144,7 @@ namespace ConsoleApplication1.Model
 
                         PortInfo info = new PortInfo(datagram.SourcePort, isSynAck);
                         bool isNew = scanResults.Add(info);
-                        if (isNew) 
+                        if (isNew)
                             Console.WriteLine(info.ToString());
 
                         if (scanResults.Count == options.EndPort - options.StartPort) break;
@@ -213,6 +214,26 @@ namespace ConsoleApplication1.Model
 
             return options.TargetIP == new IpV4Address("127.0.0.1");
         }
+
+        private bool IsInSubnetwork(ScanningOptions options)
+        {
+            List<DeviceAddress> addresses = options.Device.Addresses
+                .Where(addr => addr.Address.Family == SocketAddressFamily.Internet)
+                .ToList();
+            if (addresses.Count > 0)
+            {
+                foreach (DeviceAddress address in addresses)
+                {
+                    IpV4Address mask = address.GetMask();
+                    IpV4Address localIP = new IpV4Address(address.GetIP());
+                    uint subnetwork = localIP.ToValue() & mask.ToValue();
+                    uint targetSubnetwork = options.TargetIP.ToValue() & mask.ToValue();
+                    if (targetSubnetwork == subnetwork) return true;
+                }
+            }
+            return false;
+        }
+
         #endregion
     }
 }

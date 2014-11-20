@@ -17,7 +17,7 @@ namespace ConsoleApplication1.Extensions
             UInt48 value = address.ToValue();
             byte[] array = BitConverter.GetBytes(value).Take(6).ToArray();
             return array.Reverse().ToList();
-        } 
+        }
         public static List<byte> GetBytesList(this IpV4Address address)
         {
             uint value = address.ToValue();
@@ -26,6 +26,8 @@ namespace ConsoleApplication1.Extensions
         }
         public static string GetIP(this DeviceAddress address)
         {
+            if (address == null) return IpV4Address.Zero.ToString();
+
             if (address.Address.Family == SocketAddressFamily.Internet)
             {
                 string asString = address.Address.ToString();
@@ -34,6 +36,17 @@ namespace ConsoleApplication1.Extensions
                 return asString;
             }
             return null;
+        }
+        public static IpV4Address GetMask(this DeviceAddress address)
+        {
+            if (address != null && address.Address.Family == SocketAddressFamily.Internet)
+            {
+                string asString = address.Netmask.ToString();
+                int spacePos = asString.IndexOf(" ", StringComparison.Ordinal);
+                asString = asString.Substring(spacePos, asString.Length - spacePos);
+                return new IpV4Address(asString);
+            }
+            return IpV4Address.Zero; ;
         }
     }
 }

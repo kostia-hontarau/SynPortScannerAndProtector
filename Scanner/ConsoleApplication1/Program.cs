@@ -23,12 +23,12 @@ namespace ConsoleApplication1
             while (!exit)
             {
                 Console.WriteLine("1 - Setup scanning options;");
-                Console.WriteLine(scanner.CanScan ? 
-                    "2 - Start scanning;" : 
-                    "2 - Scan results (Open ports);");
+                Console.WriteLine(!scanner.IsBusy ?
+                    "2 - Start scanning;" :
+                    "2 - Stop scanning;");
                 Console.WriteLine("3 - Exit.");
                 int command = GetIntFromConsole();
-                
+
                 switch (command)
                 {
                     case 1:
@@ -46,20 +46,8 @@ namespace ConsoleApplication1
                     case 2:
                         try
                         {
-                            if (scanner.CanScan)
-                            {
-                                Console.WriteLine("Scanning...");
-                                scanner.Scan(options);
-                            }
-                            else
-                            {
-                                List<PortInfo> openPorts = scanner.ScanResults.Where(result => result.IsOpen).ToList();
-                                Console.WriteLine(openPorts.Count > 0 ? "Open ports:" : "There are no open ports in results!");
-                                foreach (PortInfo info in openPorts)
-                                {
-                                    Console.WriteLine(info.ToString());
-                                }
-                            }
+                            if (!scanner.IsBusy) scanner.Scan(options);
+                            else scanner.StopCurrentScanning();
                         }
                         catch (ArgumentException exc)
                         {

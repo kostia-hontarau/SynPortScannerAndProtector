@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 using PcapDotNet.Base;
 using PcapDotNet.Core;
@@ -16,7 +17,7 @@ namespace ConsoleApplication1.Model
     internal sealed class ARPMacResolver
     {
         #region Members
-        public void ResolveDestinationMacFor(ScanningOptions options)
+        public void ResolveDestinationMacFor(ScanningOptions options, CancellationToken token)
         {
             using (PacketCommunicator communicator = options.Device.Open(65535, PacketDeviceOpenAttributes.None, 100))
             {
@@ -26,6 +27,8 @@ namespace ConsoleApplication1.Model
 
                 while (true)
                 {
+                    token.ThrowIfCancellationRequested();
+
                     Packet responce;
                     PacketCommunicatorReceiveResult result = communicator.ReceivePacket(out responce);
                     switch (result)

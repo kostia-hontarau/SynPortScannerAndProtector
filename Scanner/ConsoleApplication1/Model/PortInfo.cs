@@ -1,16 +1,17 @@
 ﻿using System;
 
+
 namespace ConsoleApplication1.Model
 {
     internal struct PortInfo : IComparable<PortInfo>
     {
         #region Data Members
-        private readonly int number;
+        private readonly ushort number;
         private readonly bool isOpen; 
         #endregion
 
         #region Properties
-        public int Number
+        public ushort Number
         {
             get { return this.number; }
         }
@@ -21,10 +22,9 @@ namespace ConsoleApplication1.Model
         #endregion
 
         #region Constructors
-        public PortInfo(int number, bool isOpen)
+        public PortInfo(ushort number, bool isOpen)
         {
-            if ((0 < number) && (number < 65535)) this.number = number;
-            else throw new ArgumentException("The port number should be between 0 and 65535!", "number");
+            this.number = number;
             this.isOpen = isOpen;
         } 
         #endregion

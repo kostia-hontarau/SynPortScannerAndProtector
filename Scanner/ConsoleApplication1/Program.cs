@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 
@@ -27,7 +26,7 @@ namespace ConsoleApplication1
                     "2 - Start scanning;" :
                     "2 - Stop scanning;");
                 Console.WriteLine("3 - Exit.");
-                int command = GetIntFromConsole();
+                int command = GetIntFromConsole(x => x >=1 && x <= 3);
 
                 switch (command)
                 {
@@ -38,9 +37,9 @@ namespace ConsoleApplication1
                         Console.Write("IP address:");
                         options.TargetIP = GetIPFromConsole();
                         Console.Write("From port:");
-                        options.StartPort = GetIntFromConsole(x => x > 0);
+                        options.StartPort = (ushort) GetIntFromConsole(x => x > 0 && x <= 65535);
                         Console.Write("To port:");
-                        options.EndPort = GetIntFromConsole(x => x > 0);
+                        options.EndPort = (ushort) GetIntFromConsole(x => x > 0 && x <= 65535);
                         Console.WriteLine("Press Enter to continue...");
                         break;
                     case 2:
@@ -68,18 +67,6 @@ namespace ConsoleApplication1
             Console.WriteLine("Press Enter to close the application...");
         }
 
-        private static int GetIntFromConsole()
-        {
-            int number = 0;
-            while (true)
-            {
-                string answer = Console.ReadLine();
-                bool success = int.TryParse(answer, out number);
-                if (!success) Console.WriteLine("You must enter a number!");
-                else break;
-            }
-            return number;
-        }
         private static int GetIntFromConsole(Func<int, bool> predicate)
         {
             int number = 0;

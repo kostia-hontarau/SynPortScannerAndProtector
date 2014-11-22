@@ -110,7 +110,11 @@
   <ItemGroup>
     <Compile Include="Model\ARPMacResolver.cs" />
     <Compile Include="Extensions\AddressExtensions.cs" />
+    <Compile Include="Model\PacketFactories\ArpPacketFactory.cs" />
+    <Compile Include="Model\PacketFactories\TcpPacketFactory.cs" />
+    <Compile Include="Model\Validation\IValidator.cs" />
     <Compile Include="Model\PortInfo.cs" />
+    <Compile Include="Model\Validation\ScanningOptionsValidator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Model\ScanningOptions.cs" />

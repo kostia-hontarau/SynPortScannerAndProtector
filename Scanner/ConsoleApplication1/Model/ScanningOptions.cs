@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 
 using PcapDotNet.Core;
 using PcapDotNet.Core.Extensions;
@@ -17,9 +16,6 @@ namespace ConsoleApplication1.Model
         private LivePacketDevice device;
         private MacAddress sourceMac;
         private IpV4Address sourceIP;
-
-        private ushort startPort;
-        private ushort endPort;
         #endregion
 
         #region Properties
@@ -45,24 +41,8 @@ namespace ConsoleApplication1.Model
         }
         public IpV4Address TargetIP { get; set; }
         public MacAddress TargetMac { get; set; }
-        public int StartPort
-        {
-            get { return this.startPort; }
-            set
-            {
-                if (0 < value && value <= 65535) this.startPort = (ushort) value;
-                else throw new ArgumentException("The port number should be between 0 and 65535!", "value");
-            }
-        }
-        public int EndPort
-        {
-            get { return this.endPort; }
-            set
-            {
-                if (0 < value && value <= 65535) this.endPort = (ushort) value;
-                else throw new ArgumentException("The port number should be between 0 and 65535!", "value");
-            }
-        }
+        public ushort StartPort { get; set; }
+        public ushort EndPort { get; set; }
         #endregion
 
         #region Constructors
@@ -73,7 +53,7 @@ namespace ConsoleApplication1.Model
             this.StartPort = 1;
             this.EndPort = 1;
         }
-        public ScanningOptions(LivePacketDevice device, IpV4Address targetIp, int startPort, int endPort)
+        public ScanningOptions(LivePacketDevice device, IpV4Address targetIp, ushort startPort, ushort endPort)
             : this()
         {
             this.Device = device;
@@ -81,7 +61,19 @@ namespace ConsoleApplication1.Model
             this.TargetIP = targetIp;
             this.StartPort = startPort;
             this.EndPort = endPort;
-        } 
+        }
+        #endregion
+
+        #region Members
+        public void CorrectPorts()
+        {
+            if (this.StartPort > this.EndPort)
+            {
+                ushort buffer = this.StartPort;
+                this.StartPort = this.EndPort;
+                this.EndPort = buffer;
+            }
+        }
         #endregion
     }
 }

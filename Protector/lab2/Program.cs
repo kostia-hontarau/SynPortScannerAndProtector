@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
+
+using PcapDotNet.Core;
+
 using lab2.ScanProtecting;
 using lab2.ScanProtecting.ScanReactors;
-using PcapDotNet.Core;
 
 
 namespace lab2
@@ -14,8 +16,9 @@ namespace lab2
             ProtectionOptions options = SetupProtectionOptions();
             ScanProtector protector = new ScanProtector(options);
             protector.Start();
-            Console.WriteLine("Press Enter to exit...");
+            Console.WriteLine("Press Enter to stop and exit...");
             Console.ReadLine();
+            protector.Stop();
         }
 
         private static ProtectionOptions SetupProtectionOptions()

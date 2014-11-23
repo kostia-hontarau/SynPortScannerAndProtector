@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 
-using lab2.ScanProtecting.ScanReactors;
+using System.Threading;
+using System.Threading.Tasks;
 
 using PcapDotNet.Core;
 using PcapDotNet.Packets;
 using PcapDotNet.Packets.IpV4;
 using PcapDotNet.Packets.Transport;
+
+using lab2.ScanProtecting.ScanReactors;
 
 
 namespace lab2.ScanProtecting
@@ -19,8 +21,8 @@ namespace lab2.ScanProtecting
         private readonly Dictionary<IpV4Address, byte> attempts = new Dictionary<IpV4Address, byte>();
         private readonly ProtectionOptions options;
 
-        private Thread listeningThread;
         private bool isRunning;
+        private CancellationTokenSource cts;
         #endregion
 
         #region Properties
@@ -37,6 +39,7 @@ namespace lab2.ScanProtecting
             this.options = options;
         }
         #endregion
+        
         #region Members
         public void Start()
         {
@@ -44,14 +47,19 @@ namespace lab2.ScanProtecting
                 throw new InvalidOperationException("Protection is already enabled!");
 
             this.isRunning = true;
-            this.listeningThread = new Thread(this.ReceivePackets);
-            this.listeningThread.IsBackground = true;
-            this.listeningThread.Start();
+            this.cts = new CancellationTokenSource();
+            this.cts.Token.Register(this.ProtectionStopped);
+            Console.WriteLine("Protection activated!");
+            Task.Run(() => this.ReceivePackets(this.cts.Token), this.cts.Token);
+        }
+        public void Stop()
+        {
+            this.cts.Cancel();
         }
         #endregion
 
         #region Assistants
-        private void ReceivePackets()
+        private void ReceivePackets(CancellationToken ct)
         {
             using (PacketCommunicator communicator = this.options.Device.Open(65535, PacketDeviceOpenAttributes.Promiscuous | PacketDeviceOpenAttributes.NoCaptureLocal, 100))
             {
@@ -59,6 +67,8 @@ namespace lab2.ScanProtecting
 
                 while (true)
                 {
+                    if (ct.IsCancellationRequested) return;
+
                     Packet responce;
                     PacketCommunicatorReceiveResult result = communicator.ReceivePacket(out responce);
 
@@ -69,7 +79,6 @@ namespace lab2.ScanProtecting
                 }
             }
         }
-
         private void ProceedResponce(Packet responce)
         {
             IpV4Datagram ipDatagram = responce.Ethernet.IpV4;
@@ -82,12 +91,15 @@ namespace lab2.ScanProtecting
             if (!isSyn) return;
             if (this.attempts.ContainsKey(ipDatagram.Source)) this.attempts[ipDatagram.Source]++;
             else this.attempts.Add(ipDatagram.Source, 1);
-            Console.WriteLine("{0}:{1} is trying to connect {2}:{3}.", ipDatagram.Source, tcpDatagram.SourcePort,
-                ipDatagram.Destination, tcpDatagram.DestinationPort);
+            Console.WriteLine("{0}:{1} is trying to connect {2}:{3}.", 
+                ipDatagram.Source, 
+                tcpDatagram.SourcePort,
+                ipDatagram.Destination, 
+                tcpDatagram.DestinationPort
+                );
 
             this.CheckConnections();
         }
-
         private void CheckConnections()
         {
             List<IpV4Address> scanners = this.attempts
@@ -99,18 +111,29 @@ namespace lab2.ScanProtecting
             {
                 foreach (IpV4Address address in scanners)
                 {
-                    try
-                    {
-                        this.options.Reacting.React(address);
-                    }
-                    catch (InvalidOperationException exception)
-                    {
-                        Console.WriteLine(exception.Message);
-                        Console.WriteLine("Now and then all scanners will be ignored...");
-                        this.options.Reacting = new IgnoreScanningReaction();
-                    }
+                    this.ReactOnScanner(address);
                 }
             }
+        }
+        private void ReactOnScanner(IpV4Address address)
+        {
+            try
+            {
+                this.options.Reacting.React(address);
+            }
+            catch (InvalidOperationException exception)
+            {
+                Console.WriteLine(exception.Message);
+                Console.WriteLine("Now and then all scanners will be ignored...");
+                this.options.Reacting = new IgnoreScanningReaction();
+            }
+        }
+
+        private void ProtectionStopped()
+        {
+            this.cts.Dispose();
+            this.isRunning = false;
+            Console.WriteLine("Protection stopped");
         }
         #endregion
     }
